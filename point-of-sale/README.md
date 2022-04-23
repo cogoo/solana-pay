@@ -2,7 +2,7 @@
 
 This is an example of how you can use the `@solana/pay` JavaScript library to create a simple point of sale system.
 
-You can use the code as a reference or run it yourself to start accepting decentralized payments in-person.
+You can [check out the app](https://app.solanapay.com?recipient=GvHeR432g7MjN9uKyX3Dzg66TqwrEWgANLnnFZXMeyyj&label=Solana+Pay), use the code as a reference, or run it yourself to start accepting decentralized payments in-person.
 
 ## Prerequisites
 
@@ -38,41 +38,96 @@ To build and run this app locally, you'll need:
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-### Installing / Set-up
+### Clone the repository
 
-Clone the repository
-
-**With Git**
-
+#### With Git
 ```shell
 git clone https://github.com/solana-labs/solana-pay.git
 ```
 
-**With Github CLI**
-
+#### With Github CLI
 ```shell
 gh repo clone solana-labs/solana-pay
 ```
 
-Install dependencies for point-of-sale
-
+### Install dependencies
 ```shell
-cd point-of-sale
+cd solana-pay/point-of-sale
 yarn install
 ```
 
-## How to run locally
-
-Start the local dev server
-
+### Start the local dev server
 ```shell
-yarn start
+yarn dev
 ```
 
-Open the point of sale app
-
+### In a separate terminal, run a local SSL proxy
 ```shell
-open http://localhost:1234?recipient=Your+Merchant+Address&label=Your+Store+Name
+yarn proxy
+```
+
+### Open the point of sale app
+```shell
+open "https://localhost:3001?recipient=Your+Merchant+Address&label=Your+Store+Name"
+```
+
+You may need to accept a locally signed SSL certificate to open the page.
+
+## Accepting USDC on Mainnet
+Import the Mainnet endpoint, along with USDC's mint address and icon in the `client/components/pages/App.tsx` file.
+```jsx
+import { MAINNET_ENDPOINT, MAINNET_USDC_MINT } from '../../utils/constants';
+import { USDCIcon } from '../images/USDCIcon';
+```
+
+In the same file, set the `endpoint` value in the `<ConnectionProvider>` to `MAINNET_ENDPOINT` and set the following values in the `<ConfigProvider>`:
+
+```tsx
+splToken={MAINNET_USDC_MINT}
+symbol="USDC"
+icon={<USDCIcon />}
+decimals={6}
+minDecimals={2}
+```
+
+**Make sure to use 6 decimals for USDC!**
+
+When you're done, it should look like this:
+
+```jsx
+<ConnectionProvider endpoint={MAINNET_ENDPOINT}>
+    <WalletProvider wallets={wallets} autoConnect={connectWallet}>
+        <WalletModalProvider>
+            <ConfigProvider
+                baseURL={baseURL}
+                link={link}
+                recipient={recipient}
+                label={label}
+                message={message}
+                splToken={MAINNET_USDC_MINT}
+                symbol="USDC"
+                icon={<USDCIcon />}
+                decimals={6}
+                minDecimals={2}
+                connectWallet={connectWallet}
+            >
+```
+
+## Using Transaction Requests
+
+[Transaction Requests](../SPEC.md#specification-transaction-request) are a new feature in Solana Pay.
+
+**More details coming soon!** <!-- TODO -->
+
+## Deploying to Vercel
+
+You can deploy this point of sale app to Vercel with a few clicks. Fork the project and configure it like this:
+
+**More details coming soon!** <!-- TODO -->
+
+Once the deployment finishes, navigate to
+```
+https://<YOUR DEPLOYMENT URL>?recipient=<YOUR WALLET ADDRESS>&label=Your+Store+Name
 ```
 
 ## License
