@@ -1,1 +1,11 @@
-.next
+.idea
+.vscode
+
+.parcel-cache
+.vercel
+
+dist
+docs
+
+node_modules
+

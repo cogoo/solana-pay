@@ -1,5 +1,5 @@
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { findReference } from '../src';
+import { findTransactionSignature } from '../src';
 
 const reference = Keypair.generate().publicKey;
 const signaturesForAddress = {
@@ -16,7 +16,7 @@ describe('findTransactionSignature', () => {
     it('should return the last signature', async () => {
         expect.assertions(1);
 
-        const found = await findReference(connection, reference);
+        const found = await findTransactionSignature(connection, reference);
 
         expect(found).toEqual({ signature: 'signature' });
     });
@@ -26,6 +26,6 @@ describe('findTransactionSignature', () => {
 
         const reference = Keypair.generate().publicKey;
 
-        await expect(async () => await findReference(connection, reference)).rejects.toThrow('not found');
+        await expect(async () => await findTransactionSignature(connection, reference)).rejects.toThrow('not found');
     });
 });

@@ -1,6 +1,11 @@
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import BigNumber from 'bignumber.js';
-import { encodeURL, findReference, FindReferenceError, validateTransfer } from '../../src';
+import {
+    encodeURL,
+    findTransactionSignature,
+    FindTransactionSignatureError,
+    validateTransactionSignature,
+} from '../../src';
 import { MERCHANT_WALLET } from './constants';
 import { establishConnection } from './establishConnection';
 import { simulateCheckout } from './simulateCheckout';
@@ -29,7 +34,7 @@ async function main() {
     /**
      * Create a payment request link
      *
-     * Solana Pay uses a standard URL scheme across wallets for native SOL and SPL Token payments.
+     * Solana Pay uses a standard URI scheme across wallets for native SOL and SPL Token payments.
      * Several parameters are encoded within the link representing an intent to collect payment from a customer.
      */
     console.log('3. 💰 Create a payment request link \n');
@@ -71,12 +76,12 @@ async function main() {
         const interval = setInterval(async () => {
             console.count('Checking for transaction...');
             try {
-                signatureInfo = await findReference(connection, reference, { finality: 'confirmed' });
+                signatureInfo = await findTransactionSignature(connection, reference, undefined, 'confirmed');
                 console.log('\n 🖌  Signature found: ', signatureInfo.signature);
                 clearInterval(interval);
                 resolve(signatureInfo);
             } catch (error: any) {
-                if (!(error instanceof FindReferenceError)) {
+                if (!(error instanceof FindTransactionSignatureError)) {
                     console.error(error);
                     clearInterval(interval);
                     reject(error);
@@ -100,7 +105,16 @@ async function main() {
     console.log('\n6. 🔗 Validate transaction \n');
 
     try {
-        await validateTransfer(connection, signature, { recipient: MERCHANT_WALLET, amount });
+        const amountInLamports = amount.times(LAMPORTS_PER_SOL).integerValue(BigNumber.ROUND_FLOOR);
+
+        await validateTransactionSignature(
+            connection,
+            signature,
+            MERCHANT_WALLET,
+            amountInLamports,
+            undefined,
+            reference
+        );
 
         // Update payment status
         paymentStatus = 'validated';

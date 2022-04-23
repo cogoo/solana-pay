@@ -1,83 +1,66 @@
-import { SOLANA_PROTOCOL } from './constants';
-import { Amount, Label, Memo, Message, Recipient, References, SPLToken } from './types';
+import { PublicKey } from '@solana/web3.js';
+import BigNumber from 'bignumber.js';
+import { URL_PROTOCOL } from './constants';
 
 /**
- * Fields of a Solana Pay transaction request URL.
+ * Optional query parameters to encode in a Solana Pay URL.
  */
-export interface TransactionRequestURLFields {
-    /** `link` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#link). */
-    link: URL;
-    /** `label` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#label-1). */
-    label?: Label;
-    /** `message` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#message-1).  */
-    message?: Message;
+export interface EncodeURLParams {
+    /** `amount` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#amount) */
+    amount?: BigNumber;
+    /** `splToken` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#spl-token) */
+    splToken?: PublicKey;
+    /** `reference` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#reference) */
+    reference?: PublicKey | PublicKey[];
+    /** `label` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#label) */
+    label?: string;
+    /** `message` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#message)  */
+    message?: string;
+    /** `memo` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#memo) */
+    memo?: string;
 }
 
 /**
- * Fields of a Solana Pay transfer request URL.
+ * Required and optional URL components to encode in a Solana Pay URL.
  */
-export interface TransferRequestURLFields {
-    /** `recipient` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#recipient). */
-    recipient: Recipient;
-    /** `amount` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#amount). */
-    amount?: Amount;
-    /** `spl-token` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#spl-token). */
-    splToken?: SPLToken;
-    /** `reference` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#reference). */
-    reference?: References;
-    /** `label` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#label). */
-    label?: Label;
-    /** `message` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#message).  */
-    message?: Message;
-    /** `memo` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#memo). */
-    memo?: Memo;
+export interface EncodeURLComponents extends EncodeURLParams {
+    /** `recipient` in the [Solana Pay spec](https://github.com/solana-labs/solana-pay/blob/master/SPEC.md#recipient) */
+    recipient: PublicKey;
 }
 
 /**
- * Encode a Solana Pay URL.
+ * Encode a Solana Pay URL from required and optional components.
  *
- * @param fields Fields to encode in the URL.
+ * @param {EncodeURLComponents} components
+ *
+ * @param components.recipient
+ * @param components.amount
+ * @param components.splToken
+ * @param components.reference
+ * @param components.label
+ * @param components.message
+ * @param components.memo
  */
-export function encodeURL(fields: TransactionRequestURLFields | TransferRequestURLFields): URL {
-    return 'link' in fields ? encodeTransactionRequestURL(fields) : encodeTransferRequestURL(fields);
-}
+export function encodeURL({ recipient, ...params }: EncodeURLComponents): string {
+    let url = URL_PROTOCOL + encodeURIComponent(recipient.toBase58());
 
-function encodeTransactionRequestURL({ link, label, message }: TransactionRequestURLFields): URL {
-    // Remove trailing slashes
-    const pathname = link.search
-        ? encodeURIComponent(String(link).replace(/\/\?/, '?'))
-        : String(link).replace(/\/$/, '');
-    const url = new URL(SOLANA_PROTOCOL + pathname);
-
-    if (label) {
-        url.searchParams.append('label', label);
-    }
-
-    if (message) {
-        url.searchParams.append('message', message);
+    const encodedParams = encodeURLParams(params);
+    if (encodedParams) {
+        url += '?' + encodedParams;
     }
 
     return url;
 }
 
-function encodeTransferRequestURL({
-    recipient,
-    amount,
-    splToken,
-    reference,
-    label,
-    message,
-    memo,
-}: TransferRequestURLFields): URL {
-    const pathname = recipient.toBase58();
-    const url = new URL(SOLANA_PROTOCOL + pathname);
+function encodeURLParams({ amount, splToken, reference, label, message, memo }: EncodeURLParams): string {
+    const params: [string, string][] = [];
 
     if (amount) {
-        url.searchParams.append('amount', amount.toFixed(amount.decimalPlaces()));
+        params.push(['amount', amount.toFixed(amount.decimalPlaces())]);
     }
 
     if (splToken) {
-        url.searchParams.append('spl-token', splToken.toBase58());
+        params.push(['spl-token', splToken.toBase58()]);
     }
 
     if (reference) {
@@ -86,21 +69,21 @@ function encodeTransferRequestURL({
         }
 
         for (const pubkey of reference) {
-            url.searchParams.append('reference', pubkey.toBase58());
+            params.push(['reference', pubkey.toBase58()]);
         }
     }
 
     if (label) {
-        url.searchParams.append('label', label);
+        params.push(['label', label]);
     }
 
     if (message) {
-        url.searchParams.append('message', message);
+        params.push(['message', message]);
     }
 
     if (memo) {
-        url.searchParams.append('memo', memo);
+        params.push(['memo', memo]);
     }
 
-    return url;
+    return params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
 }
